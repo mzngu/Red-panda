@@ -1,0 +1,28 @@
+---
+import { IoHome, IoChatbubbleEllipses, IoAddCircleOutline, IoDocumentText, IoPerson } from "react-icons/io5";
+
+const currentPath = Astro.url.pathname;
+
+// Helper function to check if path is active
+function isActive(path) {
+  return currentPath === path ? 'active' : '';
+}
+---
+
+<nav class="bottom-nav">
+  <a href="/home/home" class={`nav-btn ${isActive('/home/home')}`}>
+    <IoHome />
+  </a>
+  <a href="/conversation/conversation" class={`nav-btn ${isActive('/conversation/conversation')}`}>
+    <IoChatbubbleEllipses />
+  </a>
+  <a href="/chatbot/chatbot" class="button nav-btn add-btn ${isActive('/chatbot/chatbot')}"> 
+    <IoAddCircleOutline />
+  </a>
+  <a href="/notes" class={`nav-btn ${isActive('/notes')}`}>
+    <IoDocumentText />
+  </a>
+  <a href="/profile" class={`nav-btn ${isActive('/profile')}`}>
+    <IoPerson />
+  </a>
+</nav>

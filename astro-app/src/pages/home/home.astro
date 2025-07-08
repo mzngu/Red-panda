@@ -1,0 +1,63 @@
+---
+import Footer from '../../components/Footer.astro';
+import '../../styles/home.css';
+import '../../styles/components/footer.css';
+---
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Chat Interface</title>
+</head>
+<body>
+    <div class="container">
+        <canvas id="curveCanvas"></canvas>
+               
+        <img  class="sorrel-pic"  src="../sorrel/pandaNormal.png"/>
+
+
+        <div class="greeting-section">
+            <div class="main-card">
+        
+                <div>DON'T PANIC</div>
+                <a class="button" href="../chatbot/chatbot">Parles avec Sorrel</a>
+            </div>
+        </div>
+        
+        <Footer />
+    </div>
+
+
+    <script>
+    const canvas = document.getElementById('curveCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+
+        drawCurve();
+    }
+
+    function drawCurve() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.beginPath();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.moveTo(0, canvas.height * 0.2);
+        ctx.bezierCurveTo(canvas.width * 0.8, canvas.height * 0.2, canvas.width * 0.2, canvas.height * 0.8, canvas.width, canvas.height * 0.9);
+        ctx.stroke();
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    </script>
+
+</body>
+</html>
+
+
+   

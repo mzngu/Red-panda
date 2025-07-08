@@ -1,0 +1,165 @@
+---
+import '../../styles/chatbot.css';
+import '../../styles/components/footer.css';
+import { Card, CardTitle } from '../../components/ui/card'
+import { Button } from '../../components/ui/button';
+import Footer from '../../components/Footer.astro';
+---
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Interface</title>
+</head>
+<body>
+    <div class="container">
+        <div class="greeting-section">
+            <div class="greeting">Parles avec Sorrel</div>
+            <img src="/sorrel/pandaTalking.png" alt="Accueil" class="header-logo" />
+        </div>
+
+        <div class="chat-section">
+            <Card className="chat-card">
+                <CardTitle className="chat-title">Chat</CardTitle>
+                <img id="image-preview" class="image-preview hidden" alt="Aperçu de l'ordonnance"/>
+                
+                <!-- L'attribut 'capture' demande au navigateur d'ouvrir la caméra -->
+                <input type="file" id="image-input" class="file-input" accept="image/*" capture>
+                <Button id="upload-button" className="upload-button">Prendre une photo de l'ordonnance</Button>
+                
+                <div id="chat-messages" class="chat-messages"></div>
+                <form id="chat-form" class="chat-form">
+                    <input
+                        id="chat-input"
+                        type="text"
+                        class="chat-input"
+                        placeholder="Veuillez entrer votre message..."
+                        autocomplete="off"
+                    />
+                    <Button type="submit" className="send-button">Envoyer</Button>
+                </form>
+            </Card>
+        </div>
+
+        <Footer />
+    </div>
+
+    <script is:inline>
+        let ws;
+        let imageDataURL = null;
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const imageInput = document.getElementById('image-input');
+        const uploadButton = document.getElementById('upload-button');
+        const imagePreview = document.getElementById('image-preview');
+
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            `;
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        uploadButton.addEventListener('click', () => {
+            imageInput.click();
+        });
+
+        imageInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imageDataURL = e.target.result;
+                    imagePreview.src = imageDataURL;
+                    imagePreview.classList.remove('hidden');
+                    appendMessage('[Photo de l\'ordonnance chargée]', true);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function appendMessage(msg, self = false) {
+            const div = document.createElement('div');
+            div.textContent = msg;
+            div.className = self ? 'message user' : 'message bot';
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function connect() {
+            console.log('Connecting to WebSocket...');
+            ws = new WebSocket('ws://localhost:8000');
+            ws.onmessage = (event) => {
+                hideTypingIndicator();
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('Received data:', data);
+                    if (data.response) {
+                        appendMessage(data.response);
+                    } else if (data.error) {
+                        appendMessage(`[Erreur: ${data.error}]`);
+                    } else {
+                        appendMessage(event.data);
+                    }
+                } catch (e) {
+                    appendMessage(event.data);
+                }
+            };
+            ws.onclose = () => {
+                hideTypingIndicator();
+                appendMessage('[Déconnecté du serveur]');
+            };
+            ws.onerror = () => {
+                hideTypingIndicator();
+                appendMessage('[Erreur de connexion]');
+            };
+            ws.onopen = () => {
+                console.log('WebSocket connection opened');
+                appendMessage('[Connecté au serveur]');
+            };
+        }
+
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const message = chatInput.value;
+
+                if (!message && !imageDataURL) {
+                    alert("Veuillez entrer un message ou charger une image.");
+                    return;
+                }
+
+                ws.send(JSON.stringify({ message: message, image: imageDataURL }));
+                
+                if (message) {
+                    appendMessage(message, true);
+                }
+                
+                showTypingIndicator();
+                chatInput.value = '';
+                imageDataURL = null; 
+                imagePreview.classList.add('hidden');
+                imageInput.value = '';
+            }
+        });
+
+        connect();
+    </script>
+</body>
+</html>
