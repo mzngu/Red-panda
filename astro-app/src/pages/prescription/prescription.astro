@@ -1,0 +1,105 @@
+---
+import '../../styles/chatbot.css';
+import '../../styles/components/footer.css';
+import { Card, CardTitle } from '../../components/ui/card'
+import { Button } from '../../components/ui/button';
+import Footer from '../../components/Footer.astro';
+---
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Interface</title>
+</head>
+<body>
+    <div class="container">
+        <div class="greeting-section">
+            <div class="greeting">Scan ton ordonnance</div>
+            <img src="/sorrel/pandaPrescription.png" alt="Accueil" class="header-logo" />
+        </div>
+
+        <div class="chat-section">
+            <Card className="chat-card">
+                <img id="image-preview" class="image-preview hidden" alt="Aperçu de l'ordonnance"/>
+                
+                <!-- L'attribut 'capture' demande au navigateur d'ouvrir la caméra -->
+                <input type="file" id="image-input" class="file-input" accept="image/*" capture>
+                <Button id="upload-button" className="upload-button">Prendre une photo de l'ordonnance</Button>
+                
+               
+                </form>
+            </Card>
+        </div>
+
+        <Footer />
+    </div>
+
+    <script is:inline>
+        let ws;
+        let imageDataURL = null;
+        const imageInput = document.getElementById('image-input');
+        const uploadButton = document.getElementById('upload-button');
+        const imagePreview = document.getElementById('image-preview');
+
+    
+
+        uploadButton.addEventListener('click', () => {
+            imageInput.click();
+        });
+
+        imageInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imageDataURL = e.target.result;
+                    imagePreview.src = imageDataURL;
+                    imagePreview.classList.remove('hidden');
+                    appendMessage('[Photo de l\'ordonnance chargée]', true);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+    
+        function connect() {
+            console.log('Connecting to WebSocket...');
+            ws = new WebSocket('ws://localhost:8000');
+            ws.onmessage = (event) => {
+                hideTypingIndicator();
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('Received data:', data);
+                    if (data.response) {
+                        appendMessage(data.response);
+                    } else if (data.error) {
+                        appendMessage(`[Erreur: ${data.error}]`);
+                    } else {
+                        appendMessage(event.data);
+                    }
+                } catch (e) {
+                    appendMessage(event.data);
+                }
+            };
+            ws.onclose = () => {
+                hideTypingIndicator();
+                appendMessage('[Déconnecté du serveur]');
+            };
+            ws.onerror = () => {
+                hideTypingIndicator();
+                appendMessage('[Erreur de connexion]');
+            };
+            ws.onopen = () => {
+                console.log('WebSocket connection opened');
+                appendMessage('[Connecté au serveur]');
+            };
+        }
+
+        
+        
+        connect();
+    </script>
+</body>
+</html>

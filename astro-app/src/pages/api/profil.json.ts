@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { DatabaseService } from '../../../../services/database.service.ts';
+import { DatabaseService } from '../../../../services/database_service';
 
 export const GET: APIRoute = async () => {
   try {

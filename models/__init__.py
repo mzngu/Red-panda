@@ -3,7 +3,7 @@ from .utilisateur import Utilisateur
 from .ordonnance import Ordonnance
 from .medicament import Medicament
 from .allergie import Allergie
-from .antecedent_medical import AntecedentMedical
+from .antecedent import AntecedentMedical
 
 __all__ = [
     "Base",

@@ -1,0 +1,81 @@
+---
+import { Card, CardContent } from "../../components/ui/card";
+import Button from '../../components/Button.astro';
+import '../../styles/global.css';
+---
+
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>Mot de passe oublié | Don't Panic</title>
+</head>
+<body class="bg-gradient-to-br from-emerald-400 to-teal-600 min-h-screen">
+  <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+      <!-- Zone pour la mascotte -->
+      <div class="flex justify-center mb-8">
+        <div class="w-32 h-32 rounded-full bg-gradient-to-br from-teal-300 to-teal-500 flex items-center justify-center shadow-lg">
+          <div class="w-24 h-24 rounded-full bg-gradient-to-br from-teal-200 to-teal-400 flex items-center justify-center">
+            <img 
+              src="/sorrel/pandSayingHi.png" 
+              alt="Mascotte Don't Panic" 
+              class="w-20 h-20 object-contain"
+              onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden')"
+            />
+            <div class="text-4xl hidden">🦊</div>
+          </div>
+        </div>
+      </div>
+
+      <Card className="w-full rounded-3xl shadow-xl bg-white">
+        <CardContent className="p-8 space-y-6">
+          <!-- Header avec flèche et titre -->
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-black">
+              DON'T PANIC
+            </h2>
+            <div class="text-xl font-bold text-black">→</div>
+          </div>
+
+          <div class="text-center mb-6">
+            <p class="text-gray-600 text-sm">
+              Entrez votre adresse e-mail pour recevoir un lien de réinitialisation
+            </p>
+          </div>
+
+          <form class="space-y-6">
+            <div>
+              <label class="text-sm font-medium text-black block mb-2">
+                Adresse mail :
+              </label>
+              <input
+                type="email"
+                required
+                class="w-full border-b-2 border-cyan-400 outline-none pb-2 bg-transparent text-black placeholder-gray-500"
+                placeholder=""
+              />
+            </div>
+
+            <div class="pt-4">
+              <Button className="w-full py-4 text-lg font-bold bg-gray-100 hover:bg-gray-200 text-black border-2 border-gray-300 rounded-full transition-all duration-200">
+                ENVOYER LE LIEN
+              </Button>
+            </div>
+
+            <div class="text-center pt-4">
+              <a 
+                href="/connexion/connexion" 
+                class="text-sm text-red-500 hover:text-red-600 transition-colors"
+              >
+                Retour à la connexion
+              </a>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  </div>
+</body>
+</html>

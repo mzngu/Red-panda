@@ -6,18 +6,82 @@ import os
 import base64
 from io import BytesIO
 from PIL import Image
+import logging
+from dotenv import load_dotenv
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import List
+import uvicorn
+from threading import Thread
 
-# Add the parent directory to the Python path to allow sibling imports
+# Charger les variables d'environnement AVANT tout
+load_dotenv()
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from services.service import generate_response, system_instruction
+from database.database import init_db, get_db
+import database.controller as crud
+import database.schemas as schemas
 
-# Configuration du serveur WebSocket
+# Configuration
 HOST = "localhost"
-PORT = 8000
+WEBSOCKET_PORT = 8000
+FASTAPI_PORT = 8080
 
 # Stockage des conversations par client
 conversations = {}
+
+# Créer l'application FastAPI
+app = FastAPI(
+    title="Sorrel API",
+    description="API pour la gestion des données médicales des utilisateurs.",
+    version="1.0.0",
+)
+
+# --- Endpoints FastAPI (repris de database/routes.py) ---
+
+@app.post("/utilisateurs/", response_model=schemas.Utilisateur, tags=["Utilisateurs"])
+def create_utilisateur(utilisateur: schemas.UtilisateurCreate, db: Session = Depends(get_db)):
+    """Crée un nouvel utilisateur."""
+    db_utilisateur = crud.get_utilisateur_by_email(db, email=utilisateur.email)
+    if db_utilisateur:
+        raise HTTPException(status_code=400, detail="Cet email est déjà enregistré.")
+    return crud.create_utilisateur(db=db, utilisateur=utilisateur)
+
+@app.get("/utilisateurs/", response_model=List[schemas.Utilisateur], tags=["Utilisateurs"])
+def read_utilisateurs(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Récupère une liste de tous les utilisateurs."""
+    utilisateurs = crud.get_utilisateurs(db, skip=skip, limit=limit)
+    return utilisateurs
+
+@app.get("/utilisateurs/{utilisateur_id}", response_model=schemas.Utilisateur, tags=["Utilisateurs"])
+def read_utilisateur(utilisateur_id: int, db: Session = Depends(get_db)):
+    """Récupère un utilisateur par son ID."""
+    db_utilisateur = crud.get_utilisateur(db, utilisateur_id=utilisateur_id)
+    if db_utilisateur is None:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé.")
+    return db_utilisateur
+
+@app.put("/utilisateurs/{utilisateur_id}", response_model=schemas.Utilisateur, tags=["Utilisateurs"])
+def update_utilisateur(utilisateur_id: int, utilisateur: schemas.UtilisateurUpdate, db: Session = Depends(get_db)):
+    """Met à jour un utilisateur."""
+    db_utilisateur = crud.update_utilisateur(db=db, utilisateur_id=utilisateur_id, utilisateur_data=utilisateur)
+    if db_utilisateur is None:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    return db_utilisateur
+
+@app.post("/ordonnances/{ordonnance_id}/medicaments/", response_model=schemas.Medicament, tags=["Médicaments"])
+def create_medicament_pour_ordonnance(
+    ordonnance_id: int, medicament: schemas.MedicamentCreate, db: Session = Depends(get_db)
+):
+    """Crée un nouveau médicament pour une ordonnance."""
+    db_ordonnance = crud.get_ordonnance(db, ordonnance_id=ordonnance_id)
+    if db_ordonnance is None:
+        raise HTTPException(status_code=404, detail="Ordonnance non trouvée.")
+    return crud.create_medicament_pour_ordonnance(db=db, medicament=medicament, ordonnance_id=ordonnance_id)
+
+# --- Gestion WebSocket (code existant) ---
 
 async def handle_client(websocket):
     """Gère les connexions client WebSocket."""
@@ -74,15 +138,43 @@ async def handle_client(websocket):
             del conversations[client_id]
         print(f"Client {client_id} déconnecté")
 
-async def main():
+async def start_websocket_server():
     """Démarre le serveur WebSocket."""
-    # Allow all origins for development purposes
-    async with websockets.serve(handle_client, HOST, PORT, origins=None):
-        print(f"Serveur WebSocket démarré sur {HOST}:{PORT}")
+    async with websockets.serve(handle_client, HOST, WEBSOCKET_PORT, origins=None):
+        print(f"🚀 Serveur WebSocket démarré sur {HOST}:{WEBSOCKET_PORT}")
         await asyncio.Future()  # run forever
+
+def start_fastapi_server():
+    """Démarre le serveur FastAPI."""
+    uvicorn.run(app, host=HOST, port=FASTAPI_PORT, log_level="info")
+
+async def main():
+    """Démarre les deux serveurs."""
+    try:
+        # Initialiser la base de données
+        print("🔧 Initialisation de la base de données...")
+        init_db()
+        print("✅ Base de données initialisée avec succès!")
+        
+        # Démarrer FastAPI dans un thread séparé
+        fastapi_thread = Thread(target=start_fastapi_server, daemon=True)
+        fastapi_thread.start()
+        
+        print(f"🚀 Serveur FastAPI démarré sur {HOST}:{FASTAPI_PORT}")
+        print(f"📖 Documentation API disponible sur http://{HOST}:{FASTAPI_PORT}/docs")
+        
+        # Démarrer le serveur WebSocket
+        await start_websocket_server()
+        
+    except Exception as e:
+        logging.error(f"Erreur lors du démarrage du serveur: {e}")
+        raise
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("Serveur arrêté")
+        print("\n🛑 Serveur arrêté")
+    except Exception as e:
+        print(f"❌ Erreur fatale: {e}")
+        sys.exit(1)

@@ -45,3 +45,13 @@ def generate_response(prompt_parts: List[Union[str, Image.Image]]) -> str:
     """
     response = model.generate_content(prompt_parts)
     return response.text
+
+# Ce bloc ne s'exécutera que si vous lancez ce fichier directement (python services/service.py)
+# et non quand il est importé par Django.
+if __name__ == '__main__':
+    while True:
+        user_input = input("Enter your prompt: ")
+        if user_input.lower() == "exit":
+            break
+        response = generate_response(user_input)
+        print(f"Model Response: {response}")

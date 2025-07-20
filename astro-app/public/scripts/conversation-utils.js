@@ -1,4 +1,29 @@
-// gestion des dates et du tri des convs
+// Fonction pour recup l'heure
+function getGreeting() {
+    const now = new Date();
+    const hour = now.getHours();
+    
+    if (hour >= 6 && hour < 18) {
+        return "Bonjour";
+    } else {
+        return "Bonsoir";
+    }
+}
+
+// Fonction pour mettre à jour la salutation
+function updateGreeting() {
+    const greetingElement = document.getElementById('dynamicGreeting');
+    const greeting = getGreeting();
+    const username = "'username'"; // A REMPLACER
+    
+    greetingElement.textContent = `${greeting} ${username}`;
+}
+
+// Mettre à jour la salutation au chargement de la page
+document.addEventListener('DOMContentLoaded', updateGreeting);
+
+// Mettre à jour la salutation toutes les minutes
+setInterval(updateGreeting, 60000);
 
 // Fonction pour garder les dates 
 function formatRelativeDate(date) {
@@ -55,7 +80,8 @@ function createConversation(title, avatarColor = '#f97316') {
     title: title,
     date: new Date().toISOString(),
     avatarColor: avatarColor,
-    avatar: '🐻'
+    avatar: '🐻',
+    bin: '🗑️'
   };
 }
 
@@ -91,6 +117,9 @@ function generateConversationHTML(conversation) {
       <div class="conversation-content">
         <div class="conversation-title">${conversation.title}</div>
         <div class="conversation-date">${relativeDate}</div>
+      </div>
+      <div class="bin-icon" data-id="${conversation.id}" title="Supprimer la conversation">
+        ${conversation.bin || '🗑️'}
       </div>
     </div>
   `;
@@ -171,6 +200,11 @@ function attachSwipeListeners(item) {
 
   // ouvrir la conv
   item.addEventListener('click', function(e) {
+    // Empêcher l'ouverture si on clique sur la poubelle
+    if (e.target.classList.contains('bin-icon') || e.target.closest('.bin-icon')) {
+      return;
+    }
+    
     if (!isSwipeGesture) {
       console.log('Opening conversation:', this.querySelector('.conversation-title').textContent);
     }
@@ -190,6 +224,30 @@ function attachConversationListeners() {
   // Réattacher les nouveaux listeners
   document.querySelectorAll('.conversation-item').forEach(item => {
     attachSwipeListeners(item);
+    
+    // Ajouter le listener pour la poubelle
+    const binIcon = item.querySelector('.bin-icon');
+    if (binIcon) {
+      binIcon.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const conversationId = parseInt(this.dataset.id);
+        const conversationTitle = item.querySelector('.conversation-title').textContent;
+        
+        if (confirm(`Êtes-vous sûr de vouloir supprimer la conversation "${conversationTitle}" ?`)) {
+          // Animation de suppression
+          item.style.transition = 'all 0.3s ease-out';
+          item.style.transform = 'translateX(-100%)';
+          item.style.opacity = '0';
+          
+          setTimeout(() => {
+            deleteConversation(conversationId);
+            refreshConversationsDisplay();
+          }, 300);
+        }
+      });
+    }
   });
 }
 
@@ -266,21 +324,24 @@ function initializeDefaultConversations() {
                 title: "Titre 1",
                 date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
                 avatarColor: "#f97316",
-                avatar: "🐻"
+                avatar: "🐻",
+                bin: '🗑️'
             },
             {
                 id: 2,
                 title: "Titre 2", 
                 date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
                 avatarColor: "#ef4444",
-                avatar: "🐻"
+                avatar: "🐻",
+                bin: '🗑️'
             },
             {
                 id: 3,
                 title: "Titre 3",
                 date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
                 avatarColor: "#10b981",
-                avatar: "🐻"
+                avatar: "🐻",
+                bin: '🗑️'
             }
         ];
         
@@ -352,7 +413,6 @@ function updateRelativeDates() {
 function createNewConversation(title) {
     const colors = ['#60AC9A'];
     const avatars = ['🐻', '🦊', '🐱', '🐶', '🐺', '🦁'];
-    
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
     const randomAvatar = avatars[Math.floor(Math.random() * avatars.length)];
     
@@ -362,7 +422,8 @@ function createNewConversation(title) {
         title: title,
         date: new Date().toISOString(),
         avatarColor: randomColor,
-        avatar: randomAvatar
+        avatar: randomAvatar,
+        bin: '🗑️'
     };
     
     conversations.push(newConversation);
