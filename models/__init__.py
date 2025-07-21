@@ -1,3 +1,4 @@
+<<<<<<< HEAD:models/__init__.py
 from .base import Base
 from .utilisateur import Utilisateur
 from .ordonnance import Ordonnance
@@ -13,3 +14,5 @@ __all__ = [
     "Allergie",
     "AntecedentMedical",
 ]
+=======
+>>>>>>> 20436fa (modification BDD + mise à jour code):astro-app/src/models/__init__.py

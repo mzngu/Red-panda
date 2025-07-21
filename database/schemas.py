@@ -6,24 +6,22 @@ from datetime import date
 
 class UtilisateurBase(BaseModel):
     email: EmailStr
-    nom: str
-    prenom: str
-    date_naissance: date
-    nationalite: Optional[str] = None
-    adresse: Optional[str] = None
-    code_postal: Optional[str] = None
+    nom: Optional[str] = ""
+    prenom: Optional[str] = ""
+    date_naissance: Optional[date] = None
     numero_telephone: Optional[str] = None
-    role: str
+    role: str = "utilisateur"
 
 class UtilisateurCreate(UtilisateurBase):
     mot_de_passe: str
 
-class UtilisateurUpdate(UtilisateurBase):
+class UtilisateurUpdate(BaseModel):
     email: Optional[EmailStr] = None
     mot_de_passe: Optional[str] = None
     nom: Optional[str] = None
     prenom: Optional[str] = None
     date_naissance: Optional[date] = None
+    numero_telephone: Optional[str] = None
     role: Optional[str] = None
 
 class Utilisateur(UtilisateurBase):
@@ -96,7 +94,6 @@ class AntecedentMedicalBase(BaseModel):
     nom: str
     type: str
     description: Optional[str] = None
-    raison: Optional[str] = None
     date_diagnostic: Optional[date] = None
 
 class AntecedentMedicalCreate(AntecedentMedicalBase):
@@ -110,3 +107,21 @@ class AntecedentMedical(AntecedentMedicalBase):
     id: int
     utilisateur_id: int
     model_config = ConfigDict(from_attributes=True)
+
+# --- Schémas d'authentification ---
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    mot_de_passe: str
+
+class LoginResponse(BaseModel):
+    message: str
+    user: Utilisateur
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    mot_de_passe: str
+    role: str = "utilisateur"
+
+class LogoutResponse(BaseModel):
+    message: str

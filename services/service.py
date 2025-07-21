@@ -1,9 +1,11 @@
 import google.generativeai as genai
 from typing import List, Union
 from PIL import Image
+import os
+from dotenv import load_dotenv
 
 
-genai.configure(api_key="AIzaSyCOT92kKisScW1CJJS5A82tMJX6ecHd-do")
+genai.configure(api_key=os.getenv("GEMAL_API_KEY"))
 
 generation_config = {
     "temperature": 1,
@@ -28,7 +30,7 @@ Ensuite, présente les informations extraites sous forme de liste claire. Si l'i
  """
 
 model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash", 
+    model_name="gemini-2.5-flash", 
     generation_config=generation_config,
     
 )

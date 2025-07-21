@@ -35,9 +35,6 @@ def create_utilisateur(db: Session, utilisateur: schemas.UtilisateurCreate):
         nom=utilisateur.nom,
         prenom=utilisateur.prenom,
         date_naissance=utilisateur.date_naissance,
-        nationalite=utilisateur.nationalite,
-        adresse=utilisateur.adresse,
-        code_postal=utilisateur.code_postal,
         numero_telephone=utilisateur.numero_telephone,
         role=utilisateur.role
     )
@@ -46,25 +43,42 @@ def create_utilisateur(db: Session, utilisateur: schemas.UtilisateurCreate):
     db.refresh(db_utilisateur)
     return db_utilisateur
 
-def update_utilisateur(db: Session, utilisateur_id: int, utilisateur_data: schemas.UtilisateurCreate):
+# Remplace ou ajoute cette fonction dans database/controller.py
+
+def update_utilisateur(db: Session, utilisateur_id: int, utilisateur_data):
     """Met à jour un utilisateur."""
+    print(f"Controller - Mise à jour utilisateur ID: {utilisateur_id}")
+    
     db_utilisateur = get_utilisateur(db, utilisateur_id)
     if not db_utilisateur:
+        print(f"Utilisateur {utilisateur_id} non trouvé")
         return None
 
-    update_data = utilisateur_data.model_dump(exclude_unset=True)
+    # Préparer les données à mettre à jour
+    if hasattr(utilisateur_data, 'dict'):
+        # Si c'est un objet Pydantic
+        update_data = utilisateur_data.dict(exclude_unset=True)
+    else:
+        # Si c'est déjà un dictionnaire
+        update_data = utilisateur_data
 
-    if "mot_de_passe" in update_data and update_data["mot_de_passe"]:
-        hashed_password = get_password_hash(update_data["mot_de_passe"])
-        db_utilisateur.mot_de_passe = hashed_password
-        del update_data["mot_de_passe"]
+    print(f"Données à mettre à jour: {update_data}")
 
+    # Mise à jour des champs
     for key, value in update_data.items():
-        setattr(db_utilisateur, key, value)
+        if hasattr(db_utilisateur, key):
+            print(f"Mise à jour {key}: {getattr(db_utilisateur, key)} -> {value}")
+            setattr(db_utilisateur, key, value)
 
-    db.commit()
-    db.refresh(db_utilisateur)
-    return db_utilisateur
+    try:
+        db.commit()
+        db.refresh(db_utilisateur)
+        print(f"Utilisateur {utilisateur_id} mis à jour avec succès")
+        return db_utilisateur
+    except Exception as e:
+        print(f"Erreur lors de la mise à jour: {str(e)}")
+        db.rollback()
+        raise e
 
 def delete_utilisateur(db: Session, utilisateur_id: int):
     """Supprime un utilisateur et ses données en cascade."""
@@ -205,3 +219,30 @@ def create_antecedent_pour_utilisateur(db: Session, antecedent: schemas.Antecede
 def get_antecedents_par_utilisateur(db: Session, utilisateur_id: int, skip: int = 0, limit: int = 100):
     """Récupère les antécédents d'un utilisateur."""
     return db.query(models.AntecedentMedical).filter(models.AntecedentMedical.utilisateur_id == utilisateur_id).offset(skip).limit(limit).all()
+
+
+def create_utilisateur_simple(db: Session, email: str, mot_de_passe: str, role: str = "utilisateur"):
+    """Crée un utilisateur avec seulement email et mot de passe."""
+    from datetime import date
+    import sys
+    import os
+    
+    # Ajouter le chemin parent pour les imports
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    
+    from models.utilisateur import Utilisateur
+    
+    hashed_password = get_password_hash(mot_de_passe)
+    db_utilisateur = Utilisateur(
+        email=email,
+        mot_de_passe=hashed_password,
+        nom="",
+        prenom="",
+        date_naissance=date.today(),
+        numero_telephone=None,
+        role=role
+    )
+    db.add(db_utilisateur)
+    db.commit()
+    db.refresh(db_utilisateur)
+    return db_utilisateur

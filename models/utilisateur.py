@@ -1,24 +1,19 @@
 from sqlalchemy import Column, Integer, String, Date, CheckConstraint
 from sqlalchemy.orm import relationship
 from .base import Base
-from sqlalchemy.orm import declarative_base
-
-Base = declarative_base()
+from datetime import date
 
 class Utilisateur(Base):
     __tablename__ = 'utilisateur'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    nom = Column(String, nullable=False)
-    prenom = Column(String, nullable=False)
-    date_naissance = Column(Date, nullable=False)
-    nationalite = Column(String)
-    adresse = Column(String)
-    code_postal = Column(String)
+    nom = Column(String, nullable=True, default="")  
+    prenom = Column(String, nullable=True, default="") 
+    date_naissance = Column(Date, nullable=True, default=date.today)  
     email = Column(String, nullable=False, unique=True)
     mot_de_passe = Column(String, nullable=False)
-    numero_telephone = Column(String)
-    role = Column(String, nullable=False)
+    numero_telephone = Column(String, nullable=True)
+    role = Column(String, nullable=False, default='utilisateur')
 
     __table_args__ = (
         CheckConstraint("role IN ('admin', 'utilisateur')", name='check_role'),

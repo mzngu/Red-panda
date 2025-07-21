@@ -1,0 +1,241 @@
+---
+import Footer from '../../components/Footer.astro';
+import '../../styles/profile.css';
+import '../../styles/components/footer.css';
+---
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Mon Profil | Don't Panic</title>
+</head>
+<body>
+    <div class="container">
+        <div class="profile-card">
+            <!-- Header -->
+            <div class="header">
+                <h1 class="title">MON PROFIL</h1>
+                <a href="/home/home" class="back-btn">← Retour</a>
+            </div>
+
+            <!-- Messages d'erreur/succès -->
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+            <div id="successMessage" class="success-message" style="display: none;"></div>
+
+            <!-- Avatar et email -->
+            <div class="avatar-section">
+                <div class="avatar-container">
+                    <div class="avatar-inner">
+                        <img src="/sorrel/pandaNormal.png" alt="Avatar" class="avatar-img">
+                    </div>
+                </div>
+                <div id="userEmail" class="user-email">Chargement...</div>
+                <button id="editToggle" class="edit-mode-toggle">✏️ Modifier</button>
+            </div>
+
+            <!-- Formulaire -->
+            <form id="profileForm" class="form-section">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Prénom</label>
+                        <input type="text" id="prenom" name="prenom" class="form-input" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nom</label>
+                        <input type="text" id="nom" name="nom" class="form-input" disabled>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Date de naissance</label>
+                    <input type="date" id="date_naissance" name="date_naissance" class="form-input" disabled>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Numéro de téléphone</label>
+                    <input type="tel" id="numero_telephone" name="numero_telephone" class="form-input" disabled>
+                </div>
+
+                <button type="submit" id="saveBtn" class="save-btn" style="display: none;">
+                    💾 Sauvegarder
+                </button>
+            </form>
+
+            <!-- Section déconnexion -->
+            <div class="logout-section">
+                <button id="logoutBtn" class="logout-btn">🚪 Se déconnecter</button>
+            </div>
+        </div>
+        
+        <Footer />
+    </div>
+
+    <script>
+        let editMode = false;
+        let currentUser = null;
+
+        // Vérification d'authentification et chargement des données
+        async function loadProfile() {
+            try {
+                const response = await fetch('http://localhost:8080/auth/me', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Non authentifié');
+                }
+                
+                currentUser = await response.json();
+                
+                // Remplir les champs
+                document.getElementById('userEmail').textContent = currentUser.email;
+                document.getElementById('prenom').value = currentUser.prenom || '';
+                document.getElementById('nom').value = currentUser.nom || '';
+                document.getElementById('date_naissance').value = currentUser.date_naissance || '';
+                document.getElementById('numero_telephone').value = currentUser.numero_telephone || '';
+                
+            } catch (error) {
+                console.error('Erreur chargement profil:', error);
+                window.location.href = '/connexion/connexion';
+            }
+        }
+
+        // Basculer le mode édition
+        function toggleEditMode() {
+            editMode = !editMode;
+            const inputs = document.querySelectorAll('.form-input');
+            const editToggle = document.getElementById('editToggle');
+            const saveBtn = document.getElementById('saveBtn');
+            
+            if (editMode) {
+                inputs.forEach(input => {
+                    if (input.id !== 'email') { // L'email ne peut pas être modifié
+                        input.disabled = false;
+                    }
+                });
+                editToggle.textContent = '❌ Annuler';
+                editToggle.classList.add('cancel');
+                saveBtn.style.display = 'block';
+            } else {
+                inputs.forEach(input => input.disabled = true);
+                editToggle.textContent = '✏️ Modifier';
+                editToggle.classList.remove('cancel');
+                saveBtn.style.display = 'none';
+                
+                // Restaurer les valeurs originales
+                if (currentUser) {
+                    document.getElementById('prenom').value = currentUser.prenom || '';
+                    document.getElementById('nom').value = currentUser.nom || '';
+                    document.getElementById('date_naissance').value = currentUser.date_naissance || '';
+                    document.getElementById('numero_telephone').value = currentUser.numero_telephone || '';
+                }
+            }
+        }
+
+        // Sauvegarder le profil
+        async function saveProfile(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(document.getElementById('profileForm'));
+            const updateData = {
+                nom: formData.get('nom') || '',
+                prenom: formData.get('prenom') || '',
+                date_naissance: formData.get('date_naissance') || null,
+                numero_telephone: formData.get('numero_telephone') || null
+            };
+            
+            try {
+                showLoading(true);
+                
+                const response = await fetch(`http://localhost:8080/utilisateurs/${currentUser.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(updateData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Erreur lors de la mise à jour');
+                }
+                
+                currentUser = await response.json();
+                toggleEditMode();
+                showSuccess('Profil mis à jour avec succès !');
+                
+            } catch (error) {
+                console.error('Erreur sauvegarde:', error);
+                showError('Erreur lors de la sauvegarde. Veuillez réessayer.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Déconnexion
+        async function logout() {
+            if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                try {
+                    const response = await fetch('http://localhost:8080/auth/logout', {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    
+                    if (response.ok) {
+                        window.location.href = '/connexion/connexion';
+                    }
+                } catch (error) {
+                    console.error('Erreur déconnexion:', error);
+                }
+            }
+        }
+
+        // Fonctions utilitaires
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            
+            successDiv.style.display = 'none';
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            
+            errorDiv.style.display = 'none';
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showLoading(loading) {
+            const card = document.querySelector('.profile-card');
+            if (loading) {
+                card.classList.add('loading');
+            } else {
+                card.classList.remove('loading');
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProfile();
+            
+            document.getElementById('editToggle').addEventListener('click', toggleEditMode);
+            document.getElementById('profileForm').addEventListener('submit', saveProfile);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+        });
+    </script>
+</body>
+</html

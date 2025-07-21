@@ -46,3 +46,9 @@ Thumbs.db
 /services/__pycache__/
 /src/astro/__pycache__/
 /src/models/__pycache__/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

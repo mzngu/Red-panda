@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from "./ui/card";
 
 type AuthCardProps = {
@@ -6,8 +6,109 @@ type AuthCardProps = {
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
 };
 
-const AuthCard: React.FC<AuthCardProps> = ({ mode, onSubmit = () => {} }) => {
+const AuthCard: React.FC<AuthCardProps> = ({ mode, onSubmit }) => {
   const isLogin = mode === "login";
+  const [formData, setFormData] = useState({
+    email: '',
+    mot_de_passe: '',
+    confirmPassword: ''
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      // Validation côté client
+      if (!formData.email || !formData.mot_de_passe) {
+        setError('Veuillez remplir tous les champs');
+        setLoading(false);
+        return;
+      }
+
+      if (!isLogin) {
+        // Validation pour l'inscription
+        if (formData.mot_de_passe !== formData.confirmPassword) {
+          setError('Les mots de passe ne correspondent pas');
+          setLoading(false);
+          return;
+        }
+      }
+
+      const endpoint = isLogin ? '/auth/login' : '/auth/register';
+      const payload = isLogin 
+        ? {
+            email: formData.email,
+            mot_de_passe: formData.mot_de_passe
+          }
+        : {
+            email: formData.email,
+            mot_de_passe: formData.mot_de_passe,
+            role: 'utilisateur'
+          };
+
+      console.log('Envoi des données:', payload);
+
+      const response = await fetch(`http://localhost:8080${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
+
+      console.log('Response status:', response.status);
+      
+      let data;
+      try {
+        data = await response.json();
+        console.log('Response data:', data);
+      } catch (jsonError) {
+        console.error('Erreur parsing JSON:', jsonError);
+        throw new Error('Réponse serveur invalide');
+      }
+
+      if (!response.ok) {
+        // Gestion spécifique des erreurs
+        if (response.status === 422) {
+          throw new Error('Données invalides. Vérifiez vos informations.');
+        } else if (response.status === 400) {
+          throw new Error(data.detail || 'Données incorrectes');
+        } else if (response.status === 401) {
+          throw new Error('Email ou mot de passe incorrect');
+        } else if (response.status === 405) {
+          throw new Error('Erreur de configuration du serveur');
+        } else {
+          throw new Error(data.detail || `Erreur ${response.status}`);
+        }
+      }
+
+      // Succès - rediriger vers la page d'accueil
+      console.log('Succès:', data.message);
+      window.location.href = '/home/home';
+      
+    } catch (err) {
+      console.error('Erreur complète:', err);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Une erreur inattendue est survenue');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-md mx-auto">
@@ -15,13 +116,11 @@ const AuthCard: React.FC<AuthCardProps> = ({ mode, onSubmit = () => {} }) => {
       <div className="flex justify-center mb-8">
         <div className="w-32 h-32 rounded-full bg-gradient-to-br from-teal-300 to-teal-500 flex items-center justify-center shadow-lg">
           <div className="w-24 h-24 rounded-full bg-gradient-to-br from-teal-200 to-teal-400 flex items-center justify-center">
-            {/* Image de la mascotte avec fallback */}
             <img 
               src="/sorrel/pandSayingHi.png" 
               alt="Mascotte Don't Panic" 
               className="w-20 h-20 object-contain"
               onError={(e) => {
-                // Fallback si l'image n'existe pas
                 e.currentTarget.style.display = 'none';
                 e.currentTarget.nextElementSibling?.classList.remove('hidden');
               }}
@@ -41,13 +140,23 @@ const AuthCard: React.FC<AuthCardProps> = ({ mode, onSubmit = () => {} }) => {
             <div className="text-xl font-bold text-black">→</div>
           </div>
 
-          <form className="space-y-6" onSubmit={onSubmit}>
+          {/* Affichage des erreurs */}
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+
+          <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label className="text-sm font-medium text-black block mb-2">
                 Adresse mail :
               </label>
               <input
                 type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
                 required
                 className="w-full border-b-2 border-cyan-400 outline-none pb-2 bg-transparent text-black placeholder-gray-500"
                 placeholder=""
@@ -60,6 +169,9 @@ const AuthCard: React.FC<AuthCardProps> = ({ mode, onSubmit = () => {} }) => {
               </label>
               <input
                 type="password"
+                name="mot_de_passe"
+                value={formData.mot_de_passe}
+                onChange={handleChange}
                 required
                 className="w-full border-b-2 border-cyan-400 outline-none pb-2 bg-transparent text-black placeholder-gray-500"
                 placeholder=""
@@ -73,6 +185,9 @@ const AuthCard: React.FC<AuthCardProps> = ({ mode, onSubmit = () => {} }) => {
                 </label>
                 <input
                   type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
                   required
                   className="w-full border-b-2 border-cyan-400 outline-none pb-2 bg-transparent text-black placeholder-gray-500"
                   placeholder=""
@@ -96,9 +211,10 @@ const AuthCard: React.FC<AuthCardProps> = ({ mode, onSubmit = () => {} }) => {
             <div className="pt-4">
               <button
                 type="submit"
-                className="w-full py-4 text-lg font-bold bg-gray-100 hover:bg-gray-200 text-black border-2 border-gray-300 rounded-full transition-all duration-200"
+                disabled={loading}
+                className="w-full py-4 text-lg font-bold bg-gray-100 hover:bg-gray-200 text-black border-2 border-gray-300 rounded-full transition-all duration-200 disabled:opacity-50"
               >
-                {isLogin ? "SE CONNECTER" : "S'INSCRIRE"}
+                {loading ? "Chargement..." : (isLogin ? "SE CONNECTER" : "S'INSCRIRE")}
               </button>
             </div>
 

@@ -7,7 +7,7 @@ class Allergie(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     utilisateur_id = Column(Integer, ForeignKey('utilisateur.id'), nullable=False)
-    nom = Column(String, nullable=False)
-    description = Column(Text)
+    nom = Column(String, nullable=True, default="")
+    description_allergie = Column(Text, nullable=True, default="")
 
     utilisateur = relationship("Utilisateur", back_populates="allergies")

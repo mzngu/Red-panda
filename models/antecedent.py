@@ -7,10 +7,8 @@ class AntecedentMedical(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     utilisateur_id = Column(Integer, ForeignKey('utilisateur.id'), nullable=False)
-    type = Column(String, nullable=False)
-    description = Column(Text)
-    nom = Column(String, nullable=False)
-    raison = Column(String)
-    date_diagnostic = Column(Date)
+    description = Column(Text, nullable=True, default="")
+    nom = Column(String, nullable=True, default="")
+    date_diagnostic = Column(Date, nullable=True, default="")
 
     utilisateur = relationship("Utilisateur", back_populates="antecedents")
