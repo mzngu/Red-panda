@@ -1,7 +1,3 @@
-<h1 align="center">
-😎 NOTRE PROJET DE FIN D'ANNEE Pré-MSC 😎
-</h1></br>
-
 ## 📱 DON'T PANIC Chat Interface Médical
 
 Interface de chat moderne pour avoir un premier avis et des conseils suite à tes symptômes, construite avec **Astro**.
