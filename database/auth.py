@@ -12,11 +12,13 @@ from dotenv import load_dotenv
 
 from . import controller as crud
 from .database import get_db
+import time
+
 
 load_dotenv()
 
 # Configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")  # À changer en production
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")  # A CHANGER
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -69,6 +71,18 @@ class AuthService:
         if not AuthService.verify_password(password, user.mot_de_passe):
             return False
         return user
+
+    @staticmethod
+    def verify_access_token(token: str, secret_key: str, algorithm: str):
+        try:
+            payload = jwt.decode(token, secret_key, algorithms=[algorithm])
+            # Vérifie l'expiration
+            if payload.get("exp") and int(time.time()) > payload["exp"]:
+                return None
+            return payload
+        except JWTError:
+            return None
+
 
 # Dépendance pour récupérer l'utilisateur actuel
 def get_current_user(

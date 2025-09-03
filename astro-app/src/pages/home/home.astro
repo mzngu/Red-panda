@@ -9,108 +9,151 @@ import '../../styles/components/footer.css';
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Chat Interface</title>
+    <title>Ton rappel quotidien - Sorrel</title>
 </head>
 <body>
     <div class="container">
         <canvas id="curveCanvas"></canvas>
                
-        <img  class="sorrel-pic"  src="../sorrel/pandaNormal.png"/>
 
         <div class="greeting-section">
-            <div class="main-card">
-                <div>DON'T PANIC</div>
-                <a class="button" href="../chatbot/chatbot">Parles avec Sorrel</a>
+            <img class="sorrel-pic" src="../sorrel/pandaNormal.png" alt="Sorrel" id="currentAvatar"/>
+
+            <div class="main-card-header">
+                <div>Ton rappel quotidien</div>
             </div>
-        </div>
-        
-        <!-- Bouton de déconnexion (sera ajouté par JavaScript) -->
-        <div id="userControls" style="display: none; position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <span id="userName"></span>
-            <a href="/profile/profile" style="background: #6366f1; color: white; padding: 5px 10px; border-radius: 5px; margin-left: 10px; text-decoration: none; font-size: 14px;">Profile</a>
-            <button id="logoutBtn" style="background: #dc2626; color: white; border: none; padding: 5px 10px; border-radius: 5px; margin-left: 10px; cursor: pointer;">Déconnexion</button>
+            
+            <div class="main-card">
+                <div class="time-section">
+                    <p>Matin</p>
+                    <div class="medication-item">
+                        <div class="medication-icon">💊</div>
+                        <div class="medication-info">
+                            <div class="medication-name">Médicament 1</div>
+                            <div class="medication-dose">1/jour ?</div>
+                        </div>
+                        <div class="medication-toggle">
+                            <div class="toggle-switch"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="time-section">
+                    <p>Midi</p>
+                    <div class="medication-item">
+                        <div class="medication-icon">💊</div>
+                        <div class="medication-info">
+                            <div class="medication-name">Médicament 2</div>
+                            <div class="medication-dose">2/jour ?</div>
+                        </div>
+                        <div class="medication-toggle">
+                            <div class="toggle-switch"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="time-section">
+                    <p>Midi</p>
+                    <div class="medication-item">
+                        <div class="medication-icon">💊</div>
+                        <div class="medication-info">
+                            <div class="medication-name">Médicament 2</div>
+                            <div class="medication-dose">2/jour ?</div>
+                        </div>
+                        <div class="medication-toggle">
+                            <div class="toggle-switch"></div>
+                        </div>
+                    </div>
+                </div><div class="time-section">
+                    <p>Midi</p>
+                    <div class="medication-item">
+                        <div class="medication-icon">💊</div>
+                        <div class="medication-info">
+                            <div class="medication-name">Médicament 2</div>
+                            <div class="medication-dose">2/jour ?</div>
+                        </div>
+                        <div class="medication-toggle">
+                            <div class="toggle-switch"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="time-section">
+                    <p>Soir</p>
+                    <div class="medication-item">
+                        <div class="medication-icon">💊</div>
+                        <div class="medication-info">
+                            <div class="medication-name">Médicament 3</div>
+                            <div class="medication-dose">1/jour ?</div>
+                        </div>
+                        <div class="medication-toggle">
+                            <div class="toggle-switch active"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <Footer />
     </div>
 
-    <script>
-    // Fonction pour obtenir le nom d'affichage
-    function getDisplayName(user) {
-        // Si l'utilisateur a un prénom et un nom
-        if (user.prenom && user.nom) {
-            return `${user.prenom} ${user.nom}`;
-        }
-        // Si l'utilisateur a seulement un prénom
-        else if (user.prenom) {
-            return user.prenom;
-        }
-        // Si l'utilisateur a seulement un nom
-        else if (user.nom) {
-            return user.nom;
-        }
-        // Sinon, utiliser le début de l'email
-        else {
-            return user.email.split('@')[0];
-        }
-    }
+    <script src="/scripts/checkAuth.js" is:inline></script>
 
-    // Vérification d'authentification
-    async function checkAuth() {
+   <script>
+    let currentUser = null;
+
+    // Liste des avatars disponibles (reprend celle de la page profil)
+    const availableAvatars = [
+        { id: 'normal', src: '/sorrel/pandaNormal.png', name: 'Normal' },
+        { id: 'medicament', src: '/sorrel/pandaMedicine.png', name: 'Medicament' },
+        { id: 'happy', src: '/sorrel/pandaPawsUp.png', name: 'Heureux' },
+        { id: 'ordo', src: '/sorrel/pandaPrescription.png', name: 'Le medecin' },
+        { id: 'bonjour', src: '/sorrel/pandSayingHi.png', name: 'Bonjour' },
+        { id: 'plante', src: '/sorrel/pandaWithPlant.png', name: "L'herboriste" },
+        { id: 'reflechis', src: '/sorrel/pandThinking.png', name: "Le penseur" },
+    ];
+
+    // Charger le profil utilisateur
+    async function loadProfile() {
         try {
-            const response = await fetch('http://localhost:8080/auth/check', {
+            const response = await fetch('http://localhost:8080/auth/me', {
                 credentials: 'include'
             });
-            
-            const data = await response.json();
-            
-            if (!data.authenticated) {
-                // Pas connecté, rediriger vers la connexion
-                window.location.href = '/connexion/connexion';
-                return;
+
+            if (!response.ok) {
+                throw new Error('Non authentifié');
             }
-            
-            // Connecté, afficher les contrôles utilisateur
-            const userControls = document.getElementById('userControls');
-            const userName = document.getElementById('userName');
-            
-            if (userControls && userName) {
-                userName.textContent = `Salut ${getDisplayName(data.user)} !`;
-                userControls.style.display = 'block';
-            }
-            
+
+            currentUser = await response.json();
+            loadUserAvatar();
+
         } catch (error) {
-            console.error('Erreur vérification auth:', error);
-            // En cas d'erreur, rediriger vers la connexion
+            console.error('Erreur chargement profil:', error);
             window.location.href = '/connexion/connexion';
         }
     }
-    
-    // Fonction de déconnexion
-    async function logout() {
-        try {
-            const response = await fetch('http://localhost:8080/auth/logout', {
-                method: 'POST',
-                credentials: 'include'
-            });
-            
-            if (response.ok) {
-                window.location.href = '/connexion/connexion';
-            }
-        } catch (error) {
-            console.error('Erreur déconnexion:', error);
+
+    // Charger l'avatar de l'utilisateur
+    function loadUserAvatar() {
+        const userAvatar = currentUser.avatar || 'normal';
+        const avatarData = availableAvatars.find(avatar => avatar.id === userAvatar);
+
+        if (avatarData) {
+            const avatarImg = document.getElementById('currentAvatar');
+            avatarImg.src = avatarData.src;
+            avatarImg.alt = avatarData.name;
         }
     }
-    
-    // Vérifier l'auth au chargement de la page
-    document.addEventListener('DOMContentLoaded', checkAuth);
-    
-    // Ajouter l'event listener pour la déconnexion
+
     document.addEventListener('DOMContentLoaded', () => {
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', logout);
-        }
+        loadProfile();
+
+        // Interaction avec les toggles de médicaments
+        document.querySelectorAll('.toggle-switch').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                this.classList.toggle('active');
+            });
+        });
     });
 
     // Code existant pour le canvas
@@ -135,7 +178,7 @@ import '../../styles/components/footer.css';
 
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
-    </script>
+</script>
 
 </body>
-</html
+</html>

@@ -49,6 +49,7 @@ import Footer from '../../components/Footer.astro';
     <script is:inline>
         let ws;
         let imageDataURL = null;
+        let userProfile = null;
         const chatMessages = document.getElementById('chat-messages');
         const chatForm = document.getElementById('chat-form');
         const chatInput = document.getElementById('chat-input');
@@ -61,6 +62,7 @@ import Footer from '../../components/Footer.astro';
             typingDiv.className = 'typing-indicator';
             typingDiv.id = 'typing-indicator';
             typingDiv.innerHTML = `
+                <img src="/sorrel/pandThinking.png" alt="Accueil" class="header-logo" />
                 <div class="dot"></div>
                 <div class="dot"></div>
                 <div class="dot"></div>
@@ -139,13 +141,15 @@ import Footer from '../../components/Footer.astro';
             e.preventDefault();
             if (ws && ws.readyState === WebSocket.OPEN) {
                 const message = chatInput.value;
-
                 if (!message && !imageDataURL) {
                     alert("Veuillez entrer un message ou charger une image.");
                     return;
                 }
-
-                ws.send(JSON.stringify({ message: message, image: imageDataURL }));
+                ws.send(JSON.stringify({
+                    message: message,
+                    image: imageDataURL,
+                    context: userProfile
+                }));
                 
                 if (message) {
                     appendMessage(message, true);
@@ -158,6 +162,20 @@ import Footer from '../../components/Footer.astro';
                 imageInput.value = '';
             }
         });
+
+        async function fetchUserProfile() {
+            try {
+                const response = await fetch('http://localhost:8080/auth/me', { credentials: 'include' });
+                if (!response.ok) throw new Error('Non authentifié');
+                userProfile = await response.json();
+                // Tu peux afficher le prénom, allergies, etc. dans le chat si besoin
+                console.log('Profil chargé:', userProfile);
+            } catch (error) {
+                console.error('Erreur chargement profil:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchUserProfile);
 
         connect();
     </script>

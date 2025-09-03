@@ -1,105 +1,408 @@
 ---
-import '../../styles/chatbot.css';
-import '../../styles/components/footer.css';
-import { Card, CardTitle } from '../../components/ui/card'
-import { Button } from '../../components/ui/button';
 import Footer from '../../components/Footer.astro';
+import '../../styles/components/footer.css';
 ---
 
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Interface</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calendrier hebdo | Don't Panic</title>
+  <style>
+    :root{
+      --bg1:#34d399; --bg2:#0d9488;
+      --glass: rgba(255,255,255,0.15);
+      --glass-strong: rgba(255,255,255,0.25);
+      --text:#063a36;
+      --grid:#ffffff2a;
+      --today:#fff;
+      --today-bg:#22c55e33;
+      --accent:#14b8a6;
+    }
+
+    *{ box-sizing:border-box; margin:0; padding:0; }
+
+    body{
+      min-height:100vh;
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      color:#fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow-x:hidden;
+    }
+
+    .container{
+      min-height:100svh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:24px;
+      padding:32px 16px 90px;
+      position:relative;
+    }
+
+    .heading{
+      text-align:center;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .title{
+      font-size: clamp(20px, 4vw, 28px);
+      font-weight:800;
+      letter-spacing:.5px;
+      text-transform:uppercase;
+      text-shadow:0 2px 6px rgba(0,0,0,.25);
+    }
+    .subtitle{
+      font-size:14px;
+      opacity:.9;
+    }
+
+    /* Carte calendrier (verre dépoli) */
+    .calendar-card{
+      width:min(1100px, 100%);
+      background: linear-gradient(145deg, var(--glass-strong), var(--glass));
+      backdrop-filter: blur(18px);
+      border: 2px solid rgba(255,255,255,.25);
+      border-radius: 20px;
+      box-shadow: 0 25px 50px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.35);
+      overflow:hidden;
+    }
+
+    .toolbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:14px 16px;
+      border-bottom:1px solid rgba(255,255,255,.25);
+    }
+
+    .range{
+      font-weight:700;
+      color:#fff;
+      letter-spacing:.3px;
+    }
+    .range small{
+      font-weight:500;
+      opacity:.9;
+    }
+
+    .controls{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .btn{
+      padding:8px 12px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.35);
+      background: rgba(255,255,255,.15);
+      color:#fff;
+      cursor:pointer;
+      font-weight:600;
+      transition:.2s ease;
+      user-select:none;
+    }
+    .btn:hover{ transform:translateY(-1px); background: rgba(255,255,255,.22); }
+    .btn:active{ transform:translateY(0); }
+
+    /* Grille semaine */
+    .week-grid{
+      display:grid;
+      grid-template-columns: 70px repeat(7, 1fr);
+      /* header (48) + 3 segments (3*80) */
+      grid-template-rows: 48px repeat(3, 80px);
+      width:100%;
+      border-top:1px solid var(--grid);
+      position:relative;
+      isolation:isolate;
+    }
+
+    /* En-têtes colonnes (jours) */
+    .day-header{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      font-weight:700;
+      color:#fff;
+      border-left:1px solid var(--grid);
+      border-bottom:1px solid var(--grid);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      padding: 35px 4px;
+    }
+    .day-header.today{
+      color:var(--today);
+      background: linear-gradient(180deg, var(--today-bg), rgba(255,255,255,.02));
+      position:relative;
+    }
+    .day-header.today::after{
+      content:"Aujourd'hui";
+      position:absolute; bottom:4px; right:8px;
+      font-size:11px; font-weight:700; color:#16a34a;
+      background:#ffffffcc; color:#064e3b; padding:2px 6px; border-radius:999px;
+    }
+
+    /* Case vide coin haut-gauche */
+    .corner{
+      border-bottom:1px solid var(--grid);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.01));
+    }
+
+    /* Colonne heures */
+    .hour-cell{
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding-top:6px;
+      font-size:12px;
+      color:#e7fffa;
+      border-top:1px dashed var(--grid);
+      border-right:1px solid var(--grid);
+      opacity:.9;
+    }
+
+    /* Cellules du planning */
+    .slot{
+      border-top:1px dashed var(--grid);
+      border-left:1px solid var(--grid);
+      position:relative;
+    }
+    .slot:nth-child(even){ background: rgba(255,255,255,.02); }
+
+    /* Ligne actuelle (heure) */
+    .now-line{
+      position:absolute;
+      left:70px; right:0;
+      height:2px;
+      background: linear-gradient(90deg, var(--accent), #fff);
+      box-shadow:0 0 10px var(--accent);
+      transform: translateY(var(--pos,0px));
+      z-index:3;
+      pointer-events:none;
+    }
+
+    /* Exemple d’évènement (facultatif) */
+    .event{
+      position:absolute;
+      left:6px; right:6px;
+      top:var(--top);
+      height:var(--height);
+      background: rgba(20,184,166,.9);
+      color:#063a36;
+      border-radius:10px;
+      padding:8px;
+      font-size:12px;
+      font-weight:700;
+      box-shadow: 0 10px 20px rgba(0,0,0,.2);
+      overflow:hidden;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px){
+      .week-grid{ grid-template-columns: 48px repeat(7, 1fr); }
+      .hour-cell{ font-size:11px; }
+      .day-header{ font-size:12px; padding:0 4px; }
+    }
+    @media (max-width: 640px){
+      .toolbar{ flex-direction:column; align-items:stretch; gap:10px; }
+      .controls{ justify-content:space-between; }
+      .week-grid{ grid-template-columns: 40px repeat(7, 1fr); }
+      .hour-cell{ font-size:10px; }
+      .day-header{ font-size:11px; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="greeting-section">
-            <div class="greeting">Scan ton ordonnance</div>
-            <img src="/sorrel/pandaPrescription.png" alt="Accueil" class="header-logo" />
+  <div class="container">
+    <header class="heading">
+      <div class="title">Calendrier de la semaine</div>
+      <div class="subtitle">Semaine en cours (mise à jour automatique)</div>
+    </header>
+
+    <section class="calendar-card">
+      <div class="toolbar">
+        <div class="range" id="weekRange">Semaine …</div>
+        <div class="controls">
+          <button class="btn" id="prevWeek">◀ Semaine -1</button>
+          <button class="btn" id="todayBtn">Aujourd’hui</button>
+          <button class="btn" id="nextWeek">Semaine +1 ▶</button>
         </div>
+      </div>
 
-        <div class="chat-section">
-            <Card className="chat-card">
-                <img id="image-preview" class="image-preview hidden" alt="Aperçu de l'ordonnance"/>
-                
-                <!-- L'attribut 'capture' demande au navigateur d'ouvrir la caméra -->
-                <input type="file" id="image-input" class="file-input" accept="image/*" capture>
-                <Button id="upload-button" className="upload-button">Prendre une photo de l'ordonnance</Button>
-                
-               
-                </form>
-            </Card>
-        </div>
+      <div class="week-grid" id="weekGrid">
+        <!-- Ligne 1: coin + en-têtes jours -->
+        <div class="corner"></div>
+        <div class="day-header" data-day="1"></div>
+        <div class="day-header" data-day="2"></div>
+        <div class="day-header" data-day="3"></div>
+        <div class="day-header" data-day="4"></div>
+        <div class="day-header" data-day="5"></div>
+        <div class="day-header" data-day="6"></div>
+        <div class="day-header" data-day="0"></div>
 
-        <Footer />
-    </div>
+        <!-- Colonne heures (8h → 20h) + slots 7 jours -->
+        <!-- 12 lignes d'heures -->
+        <!-- On laisse JS remplir les cellules -->
+      </div>
 
-    <script is:inline>
-        let ws;
-        let imageDataURL = null;
-        const imageInput = document.getElementById('image-input');
-        const uploadButton = document.getElementById('upload-button');
-        const imagePreview = document.getElementById('image-preview');
+      <div class="now-line" id="nowLine"></div>
+    </section>
 
-    
+    <Footer />
+  </div>
 
-        uploadButton.addEventListener('click', () => {
-            imageInput.click();
-        });
+  <script is:inline>
+    // Segments du jour (modifiable ici)
+    const SEGMENTS = [
+      { key:'morning', label:'Matin', start:6,  end:12 }, // 06:00–11:59
+      { key:'noon',    label:'Midi',  start:12, end:15 }, // 12:00–14:59
+      { key:'evening', label:'Soir',  start:18, end:23 }, // 18:00–22:59
+    ];
+    const ROWS = SEGMENTS.length;     // 3
+    const ROW_HEIGHT = 80;            // doit matcher le CSS (repeat(3, 80px))
+    const HEADER_HEIGHT = 48;
 
-        imageInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    imageDataURL = e.target.result;
-                    imagePreview.src = imageDataURL;
-                    imagePreview.classList.remove('hidden');
-                    appendMessage('[Photo de l\'ordonnance chargée]', true);
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+    const grid    = document.getElementById('weekGrid');
+    const rangeEl = document.getElementById('weekRange');
+    const nowLine = document.getElementById('nowLine');
 
-    
-        function connect() {
-            console.log('Connecting to WebSocket...');
-            ws = new WebSocket('ws://localhost:8000');
-            ws.onmessage = (event) => {
-                hideTypingIndicator();
-                try {
-                    const data = JSON.parse(event.data);
-                    console.log('Received data:', data);
-                    if (data.response) {
-                        appendMessage(data.response);
-                    } else if (data.error) {
-                        appendMessage(`[Erreur: ${data.error}]`);
-                    } else {
-                        appendMessage(event.data);
-                    }
-                } catch (e) {
-                    appendMessage(event.data);
-                }
-            };
-            ws.onclose = () => {
-                hideTypingIndicator();
-                appendMessage('[Déconnecté du serveur]');
-            };
-            ws.onerror = () => {
-                hideTypingIndicator();
-                appendMessage('[Erreur de connexion]');
-            };
-            ws.onopen = () => {
-                console.log('WebSocket connection opened');
-                appendMessage('[Connecté au serveur]');
-            };
+    const prevBtn = document.getElementById('prevWeek');
+    const nextBtn = document.getElementById('nextWeek');
+    const todayBtn = document.getElementById('todayBtn');
+
+    let weekOffset = 0;
+
+    const cloneDate = (d)=> new Date(d.getTime());
+    function getMonday(d){
+      const date = cloneDate(d);
+      const day = date.getDay(); // 0=dim, 1=lun
+      const diff = (day === 0 ? -6 : 1 - day);
+      date.setDate(date.getDate() + diff);
+      date.setHours(0,0,0,0);
+      return date;
+    }
+    const addDays = (d,n)=> { const x = cloneDate(d); x.setDate(x.getDate()+n); return x; };
+    const sameDay = (a,b)=> a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+    const fmtHdr  = (d)=> d.toLocaleDateString('fr-FR',{ weekday:'short', day:'2-digit', month:'2-digit' }).replace('.', '');
+
+    // Construit la grille: 1ère ligne = coin + 7 headers (déjà en HTML)
+    // Ensuite 3 lignes: 1 colonne "labels" + 7 colonnes "slots"
+    function buildGrid(){
+      // nettoie tout sauf les 8 premiers éléments (coin + 7 headers)
+      while (grid.children.length > 8) grid.removeChild(grid.lastElementChild);
+
+      for (let i = 0; i < ROWS; i++){
+        // Colonne labels (Matin/Midi/Soir)
+        const segCell = document.createElement('div');
+        segCell.className = 'hour-cell';
+        segCell.textContent = SEGMENTS[i].label;
+        grid.appendChild(segCell);
+
+        // 7 colonnes de slots
+        for (let c = 0; c < 7; c++){
+          const slot = document.createElement('div');
+          slot.className = 'slot';
+          slot.dataset.segment = SEGMENTS[i].key; // "morning" | "noon" | "evening"
+          slot.dataset.segIdx  = i;               // 0..2
+          slot.dataset.col     = c;               // 0=lun … 6=dim
+          grid.appendChild(slot);
         }
+      }
+    }
 
-        
-        
-        connect();
-    </script>
+    function renderWeek(offset=0){
+      const base = new Date();
+      base.setDate(base.getDate() + offset*7);
+      const monday = getMonday(base);
+      const sunday = addDays(monday, 6);
+      const today = new Date();
+
+      // Range text
+      const fmt = (d)=> d.toLocaleDateString('fr-FR',{ day:'2-digit', month:'long', year:'numeric' });
+      rangeEl.innerHTML = `<small>Du</small> ${fmt(monday)} <small>au</small> ${fmt(sunday)}`;
+
+      // Headers Lundi→Dimanche
+      const headers = grid.querySelectorAll('.day-header');
+      headers.forEach((h, idx) => {
+        const date = addDays(monday, idx);
+        h.textContent = fmtHdr(date);
+        h.classList.toggle('today', sameDay(date, today) && offset === 0);
+      });
+
+      positionNowLine(monday, sunday);
+    }
+
+    // Place une fine ligne dans le segment courant (ou la cache hors plage)
+    function positionNowLine(weekStart, weekEnd){
+      const now = new Date();
+      const inWeek = now >= weekStart && now <= new Date(weekEnd.getTime()+86400000-1);
+      if (!inWeek){ nowLine.style.display='none'; return; }
+
+      // Trouver le segment courant
+      const h = now.getHours(), m = now.getMinutes();
+      const segIdx = SEGMENTS.findIndex(s => h >= s.start && h < s.end);
+      if (segIdx === -1){ nowLine.style.display='none'; return; }
+
+      nowLine.style.display='block';
+
+      // Position verticale proportionnelle dans le segment
+      const seg = SEGMENTS[segIdx];
+      const segLengthMin = (seg.end - seg.start) * 60;
+      const minutesIntoSeg = (h - seg.start) * 60 + m;
+      const progress = Math.max(0, Math.min(1, minutesIntoSeg / segLengthMin));
+
+      const y = HEADER_HEIGHT + segIdx * ROW_HEIGHT + progress * ROW_HEIGHT;
+      nowLine.style.setProperty('--pos', y + 'px');
+    }
+
+    // Ajoute une "prise" de médicament dans un jour/segment
+    // dayIndex: 0=lun … 6=dim — segmentKey: 'morning' | 'noon' | 'evening'
+    function placeDose({ dayIndex, segmentKey, title }){
+      const segIdx = SEGMENTS.findIndex(s => s.key === segmentKey);
+      if (segIdx === -1) return;
+
+      const top    = HEADER_HEIGHT + segIdx * ROW_HEIGHT + 8; // léger padding
+      const height = ROW_HEIGHT - 16;
+
+      const dose = document.createElement('div');
+      dose.className = 'event';
+      dose.style.setProperty('--top', top + 'px');
+      dose.style.setProperty('--height', height + 'px');
+      dose.textContent = title || 'Prise';
+
+      // Option: icône pilule
+      dose.innerHTML = `💊 ${title || 'Prise'}`;
+
+      grid.appendChild(dose);
+    }
+
+    // Init
+    buildGrid();
+    renderWeek(weekOffset);
+
+    // Navigation
+    prevBtn.addEventListener('click', ()=>{ weekOffset--; renderWeek(weekOffset); });
+    nextBtn.addEventListener('click', ()=>{ weekOffset++; renderWeek(weekOffset); });
+    todayBtn.addEventListener('click', ()=>{ weekOffset=0; renderWeek(weekOffset); });
+
+    // Rafraîchit la ligne "now" chaque minute
+    setInterval(()=>{
+      const base = new Date();
+      base.setDate(base.getDate() + weekOffset*7);
+      const monday = getMonday(base);
+      const sunday = addDays(monday, 6);
+      positionNowLine(monday, sunday);
+    }, 60000);
+
+    // Exemple (dé-commente pour tester) :
+    // placeDose({ dayIndex: 0, segmentKey:'morning', title:'Vitamine D' }); // Lundi matin
+    // placeDose({ dayIndex: 2, segmentKey:'noon',    title:'Ibuprofène' }); // Mercredi midi
+    // placeDose({ dayIndex: 6, segmentKey:'evening', title:'Antibiotique' }); // Dimanche soir
+  </script>
+
 </body>
 </html>

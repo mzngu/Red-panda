@@ -1,9 +1,27 @@
-annotated-types==0.7.0
-dnspython==2.7.0
-email_validator==2.2.0
-idna==3.10
-pydantic==2.11.7
-pydantic_core==2.33.2
-typing-inspection==0.4.1
-typing_extensions==4.14.1
-websockets==15.0.1
+# Framework API
+fastapi
+uvicorn
+
+# Database
+sqlalchemy
+psycopg2-binary
+
+# Auth & sécurité
+python-dotenv
+python-jose
+passlib[bcrypt]
+bcrypt
+email-validator
+python-multipart
+
+# Websockets
+websockets
+
+# Google Generative AI
+google-generativeai
+
+# Images
+pillow
+
+# Pydantic v2 (si ton projet est en v2)
+pydantic

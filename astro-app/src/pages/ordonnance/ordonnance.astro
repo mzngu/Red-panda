@@ -1,0 +1,112 @@
+---
+import { onMount } from 'astro/jsx-runtime';
+const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8080';
+
+let ordonnance: any = null;
+let loading = true;
+let error: string | null = null;
+
+function getQueryId() {
+  if (typeof window === 'undefined') return null;
+  const u = new URL(window.location.href);
+  return u.searchParams.get('id');
+}
+
+onMount(async () => {
+  try {
+    const id = getQueryId();
+    if (!id) {
+      error = "Aucune ordonnance à afficher (id manquant).";
+      loading = false;
+      return;
+    }
+    const res = await fetch(`${API_BASE}/ordonnances/${id}`, { credentials: 'include' });
+    if (!res.ok) throw new Error(`Erreur ${res.status}`);
+    ordonnance = await res.json();
+  } catch (e: any) {
+    error = e?.message ?? 'Erreur lors du chargement.';
+  } finally {
+    loading = false;
+  }
+});
+---
+
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Ordonnance | Don't Panic</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body class="min-h-screen bg-[#EAF7F2]">
+    <main class="max-w-sm mx-auto pb-28">
+      <!-- Hero -->
+      <section class="relative bg-[#0FA06A] rounded-b-[28px] p-6 text-white">
+        <div class="w-40 h-40 rounded-full bg-white/15 mx-auto grid place-items-center">
+          <!-- placeholder illustration -->
+          <div class="w-24 h-24 rounded-full bg-white/30 grid place-items-center">
+            <span class="text-3xl">🔬</span>
+          </div>
+        </div>
+        <p class="text-center font-semibold mt-3">Finished</p>
+      </section>
+
+      <!-- Carte validité -->
+      <section class="-mt-8 px-5">
+        <div class="bg-white rounded-2xl shadow-sm p-5">
+          <p class="text-[#0C3D2F] font-semibold text-center">
+            Ce traitement est valide jusqu’au
+            <span id="valid-date" class="whitespace-nowrap">
+              {ordonnance?.valid_until ?? '00/00/0000'}
+            </span>
+            !
+          </p>
+          <p class="text-[#0C3D2F]/70 text-center mt-2">Aucune allergie détectée</p>
+        </div>
+      </section>
+
+      <!-- Results + Rappel -->
+      <section class="px-5 mt-6">
+        <div class="flex items-center justify-between">
+          <h2 class="text-[#0C3D2F] font-bold text-lg">Results</h2>
+          <label class="inline-flex items-center gap-2 text-[#0C3D2F]">
+            <span>Rappel</span>
+            <input type="checkbox" class="sr-only peer" />
+            <span class="w-10 h-6 bg-gray-300 rounded-full relative after:content-[''] after:w-5 after:h-5 after:bg-white after:rounded-full after:absolute after:top-0.5 after:left-0.5 peer-checked:bg-[#0FA06A] peer-checked:after:translate-x-4 transition-all"></span>
+          </label>
+        </div>
+
+        <!-- Liste des médicaments -->
+        <div class="mt-4 space-y-3">
+          {
+            loading
+              ? <div class="text-center text-sm text-gray-600">Chargement…</div>
+              : error
+                ? <div class="text-center text-sm text-red-600">{error}</div>
+                : (ordonnance?.medicaments ?? []).map((m) => (
+                    <div class="bg-white rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+                      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#66D0B2] to-[#0FA06A] grid place-items-center">
+                        <span>🧬</span>
+                      </div>
+                      <div class="flex-1">
+                        <p class="text-[#0C3D2F] font-semibold">{m.nom}</p>
+                        <p class="text-[#0FA06A] text-sm">{m.frequence}</p>
+                      </div>
+                    </div>
+                  ))
+          }
+        </div>
+      </section>
+
+      <!-- Bottom nav (placeholder) -->
+      <nav class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur rounded-3xl shadow-lg px-5 py-3 w-[90%]">
+        <ul class="flex items-center justify-between text-[#0C3D2F]">
+          <li>🏠</li>
+          <li>💬</li>
+          <li class="bg-[#FF6B2C] text-white rounded-full w-10 h-10 grid place-items-center">＋</li>
+          <li class="bg-[#D8F1E8] text-[#0FA06A] rounded-full w-10 h-10 grid place-items-center">📝</li>
+          <li>👤</li>
+        </ul>
+      </nav>
+    </main>
+  </body>
+</html>

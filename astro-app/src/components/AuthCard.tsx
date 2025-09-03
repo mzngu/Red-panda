@@ -17,10 +17,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ mode, onSubmit }) => {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -29,82 +26,48 @@ const AuthCard: React.FC<AuthCardProps> = ({ mode, onSubmit }) => {
     setLoading(true);
 
     try {
-      // Validation côté client
       if (!formData.email || !formData.mot_de_passe) {
         setError('Veuillez remplir tous les champs');
         setLoading(false);
         return;
       }
 
-      if (!isLogin) {
-        // Validation pour l'inscription
-        if (formData.mot_de_passe !== formData.confirmPassword) {
-          setError('Les mots de passe ne correspondent pas');
-          setLoading(false);
-          return;
-        }
+      if (!isLogin && formData.mot_de_passe !== formData.confirmPassword) {
+        setError('Les mots de passe ne correspondent pas');
+        setLoading(false);
+        return;
       }
 
       const endpoint = isLogin ? '/auth/login' : '/auth/register';
-      const payload = isLogin 
-        ? {
-            email: formData.email,
-            mot_de_passe: formData.mot_de_passe
-          }
-        : {
-            email: formData.email,
-            mot_de_passe: formData.mot_de_passe,
-            role: 'utilisateur'
-          };
-
-      console.log('Envoi des données:', payload);
+      const payload = isLogin
+        ? { email: formData.email, mot_de_passe: formData.mot_de_passe }
+        : { email: formData.email, mot_de_passe: formData.mot_de_passe, role: 'utilisateur' };
 
       const response = await fetch(`http://localhost:8080${endpoint}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(payload)
       });
 
-      console.log('Response status:', response.status);
-      
-      let data;
+      let data: any;
       try {
         data = await response.json();
-        console.log('Response data:', data);
-      } catch (jsonError) {
-        console.error('Erreur parsing JSON:', jsonError);
+      } catch {
         throw new Error('Réponse serveur invalide');
       }
 
       if (!response.ok) {
-        // Gestion spécifique des erreurs
-        if (response.status === 422) {
-          throw new Error('Données invalides. Vérifiez vos informations.');
-        } else if (response.status === 400) {
-          throw new Error(data.detail || 'Données incorrectes');
-        } else if (response.status === 401) {
-          throw new Error('Email ou mot de passe incorrect');
-        } else if (response.status === 405) {
-          throw new Error('Erreur de configuration du serveur');
-        } else {
-          throw new Error(data.detail || `Erreur ${response.status}`);
-        }
+        if (response.status === 422) throw new Error('Données invalides. Vérifiez vos informations.');
+        if (response.status === 400) throw new Error(data?.detail || 'Données incorrectes');
+        if (response.status === 401) throw new Error('Email ou mot de passe incorrect');
+        if (response.status === 405) throw new Error('Erreur de configuration du serveur');
+        throw new Error(data?.detail || `Erreur ${response.status}`);
       }
 
-      // Succès - rediriger vers la page d'accueil
-      console.log('Succès:', data.message);
       window.location.href = '/home/home';
-      
     } catch (err) {
-      console.error('Erreur complète:', err);
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Une erreur inattendue est survenue');
-      }
+      setError(err instanceof Error ? err.message : 'Une erreur inattendue est survenue');
     } finally {
       setLoading(false);
     }
@@ -112,13 +75,13 @@ const AuthCard: React.FC<AuthCardProps> = ({ mode, onSubmit }) => {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      {/* Zone pour la mascotte */}
+      {/* Mascotte */}
       <div className="flex justify-center mb-8">
         <div className="w-32 h-32 rounded-full bg-gradient-to-br from-teal-300 to-teal-500 flex items-center justify-center shadow-lg">
           <div className="w-24 h-24 rounded-full bg-gradient-to-br from-teal-200 to-teal-400 flex items-center justify-center">
-            <img 
-              src="/sorrel/pandSayingHi.png" 
-              alt="Mascotte Don't Panic" 
+            <img
+              src="/sorrel/pandSayingHi.png"
+              alt="Mascotte Don't Panic"
               className="w-20 h-20 object-contain"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
@@ -132,26 +95,39 @@ const AuthCard: React.FC<AuthCardProps> = ({ mode, onSubmit }) => {
 
       <Card className="w-full rounded-3xl shadow-xl bg-white">
         <CardContent className="p-8 space-y-6">
-          {/* Header avec flèche et titre */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-black">
-              DON'T PANIC
-            </h2>
-            <div className="text-xl font-bold text-black">→</div>
+          {/* Header avec flèche à droite */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-black">DON'T PANIC</h2>
+            {isLogin ? (
+              <a
+                href="/inscription/inscription"
+                className="text-xl font-bold text-black hover:text-cyan-600 transition-colors"
+                aria-label="Aller à l'inscription"
+              >
+                →
+              </a>
+            ) : (
+              <a
+                href="/connexion/connexion"
+                className="text-xl font-bold text-black hover:text-cyan-600 transition-colors"
+                aria-label="Aller à la connexion"
+              >
+                →
+              </a>
+            )}
           </div>
 
-          {/* Affichage des erreurs */}
+          {/* Erreurs */}
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
               {error}
             </div>
           )}
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          {/* Formulaire */}
+          <form className="space-y-6" onSubmit={onSubmit || handleSubmit}>
             <div>
-              <label className="text-sm font-medium text-black block mb-2">
-                Adresse mail :
-              </label>
+              <label className="text-sm font-medium text-black block mb-2">Adresse mail :</label>
               <input
                 type="email"
                 name="email"
@@ -159,14 +135,11 @@ const AuthCard: React.FC<AuthCardProps> = ({ mode, onSubmit }) => {
                 onChange={handleChange}
                 required
                 className="w-full border-b-2 border-cyan-400 outline-none pb-2 bg-transparent text-black placeholder-gray-500"
-                placeholder=""
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-black block mb-2">
-                Mot de passe :
-              </label>
+              <label className="text-sm font-medium text-black block mb-2">Mot de passe :</label>
               <input
                 type="password"
                 name="mot_de_passe"
@@ -174,15 +147,12 @@ const AuthCard: React.FC<AuthCardProps> = ({ mode, onSubmit }) => {
                 onChange={handleChange}
                 required
                 className="w-full border-b-2 border-cyan-400 outline-none pb-2 bg-transparent text-black placeholder-gray-500"
-                placeholder=""
               />
             </div>
 
             {!isLogin && (
               <div>
-                <label className="text-sm font-medium text-black block mb-2">
-                  Confirmer le mot de passe :
-                </label>
+                <label className="text-sm font-medium text-black block mb-2">Confirmer le mot de passe :</label>
                 <input
                   type="password"
                   name="confirmPassword"
@@ -190,24 +160,21 @@ const AuthCard: React.FC<AuthCardProps> = ({ mode, onSubmit }) => {
                   onChange={handleChange}
                   required
                   className="w-full border-b-2 border-cyan-400 outline-none pb-2 bg-transparent text-black placeholder-gray-500"
-                  placeholder=""
                 />
               </div>
             )}
 
-            {/* Mot de passe oublié (seulement pour login) */}
             {isLogin && (
               <div className="text-right">
-                <a 
-                  href="/mot-de-passe-oublie/mot-de-passe-oublie" 
+                <a
+                  href="/mot-de-passe-oublie/mot-de-passe-oublie"
                   className="text-sm text-cyan-500 hover:text-cyan-600 transition-colors"
                 >
-                  Mot de passe oublié?
+                  Mot de passe oublié ?
                 </a>
               </div>
             )}
 
-            {/* Bouton principal */}
             <div className="pt-4">
               <button
                 type="submit"
@@ -218,20 +185,13 @@ const AuthCard: React.FC<AuthCardProps> = ({ mode, onSubmit }) => {
               </button>
             </div>
 
-            {/* Lien vers l'autre mode */}
-            <div className="text-center pt-4">
+            <div className="text-center pt-2">
               {isLogin ? (
-                <a 
-                  href="/inscription/inscription" 
-                  className="text-sm text-red-500 hover:text-red-600 transition-colors"
-                >
+                <a href="/inscription/inscription" className="text-sm text-red-500 hover:text-red-600 transition-colors">
                   Je n'ai pas de compte
                 </a>
               ) : (
-                <a 
-                  href="/connexion/connexion" 
-                  className="text-sm text-red-500 hover:text-red-600 transition-colors"
-                >
+                <a href="/connexion/connexion" className="text-sm text-red-500 hover:text-red-600 transition-colors">
                   J'ai déjà un compte
                 </a>
               )}

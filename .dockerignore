@@ -1,0 +1,14 @@
+# Node / Python caches
+node_modules
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Venvs
+venv
+.myenv
+.env.local
+
+# MacOS
+.DS_Store

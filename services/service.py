@@ -32,20 +32,31 @@ Ensuite, présente les informations extraites sous forme de liste claire. Si l'i
 model = genai.GenerativeModel(
     model_name="gemini-2.5-flash", 
     generation_config=generation_config,
-    
+    system_instruction=system_instruction
 )
 
-def generate_response(prompt_parts: List[Union[str, Image.Image]]) -> str:
+def generate_response(prompt_parts: List[Union[str, Image.Image]], system_instruction_update: str = None) -> str:
     """
     Generate a response from the model based on the provided prompt parts (text and images).
     
     Args:
         prompt_parts (List[Union[str, Image.Image]]): The input parts for the model.
+        system_instruction_update (str, optional): Additional system instructions for this call.
         
     Returns:
         str: The generated response from the model.
     """
-    response = model.generate_content(prompt_parts)
+    # Crée un nouveau modèle si une instruction système mise à jour est fournie
+    if system_instruction_update:
+        updated_model = genai.GenerativeModel(
+            model_name="gemini-2.5-flash",
+            generation_config=generation_config,
+            system_instruction=system_instruction_update
+        )
+        response = updated_model.generate_content(prompt_parts)
+    else:
+        response = model.generate_content(prompt_parts)
+        
     return response.text
 
 # Ce bloc ne s'exécutera que si vous lancez ce fichier directement (python services/service.py)

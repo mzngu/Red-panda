@@ -147,6 +147,9 @@ function openConversation(conversationId) {
     // window.location.href = `/chat/${conversationId}`;
 }
 
+
+
+
 // Exposer les fonctions globalement pour le menu React
 window.ConversationPageUtils = {
     createNewConversation,

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
-from datetime import date
+from datetime import date, datetime
 
 # --- Schémas Utilisateur ---
 
@@ -11,6 +11,7 @@ class UtilisateurBase(BaseModel):
     date_naissance: Optional[date] = None
     numero_telephone: Optional[str] = None
     role: str = "utilisateur"
+    sexe : Optional[str] = ""
 
 class UtilisateurCreate(UtilisateurBase):
     mot_de_passe: str
@@ -23,6 +24,8 @@ class UtilisateurUpdate(BaseModel):
     date_naissance: Optional[date] = None
     numero_telephone: Optional[str] = None
     role: Optional[str] = None
+    avatar: Optional[str] = None  
+    sexe : Optional[str] = None
 
 class Utilisateur(UtilisateurBase):
     id: int
@@ -75,7 +78,7 @@ class Medicament(MedicamentBase):
 
 class AllergieBase(BaseModel):
     nom: str
-    description: Optional[str] = None
+    description: Optional[str] = None  # sera mappé vers description_allergie côté modèle
 
 class AllergieCreate(AllergieBase):
     pass
@@ -92,21 +95,25 @@ class Allergie(AllergieBase):
 
 class AntecedentMedicalBase(BaseModel):
     nom: str
-    type: str
     description: Optional[str] = None
     date_diagnostic: Optional[date] = None
 
-class AntecedentMedicalCreate(AntecedentMedicalBase):
-    pass
+class AntecedentMedicalCreate(BaseModel):
+    nom: str
+    description: Optional[str] = ""
+    date_diagnostic: Optional[datetime] = None
+    type: str = "maladie"  # Valeur par défaut
 
-class AntecedentMedicalUpdate(AntecedentMedicalBase):
-    nom: Optional[str] = None
-    type: Optional[str] = None
-
-class AntecedentMedical(AntecedentMedicalBase):
+class AntecedentMedical(BaseModel):
     id: int
+    nom: str
+    description: Optional[str] = ""
+    date_diagnostic: Optional[datetime] = None
+    type: str
     utilisateur_id: int
-    model_config = ConfigDict(from_attributes=True)
+
+    class Config:
+        from_attributes = True
 
 # --- Schémas d'authentification ---
 

@@ -21,7 +21,7 @@ test.describe('Page d\'accueil', () => {
     
     await page.click('text=S\'INSCRIRE');
     await expect(page).toHaveURL('/inscription/inscription');
-    await expect(page.locator('text=register')).toBeVisible();
+    await expect(page.locator('text=Inscription')).toBeVisible();
   });
 
   test('devrait naviguer vers la page de connexion', async ({ page }) => {
@@ -29,6 +29,6 @@ test.describe('Page d\'accueil', () => {
     
     await page.click('text=SE CONNECTER');
     await expect(page).toHaveURL('/connexion/connexion');
-    await expect(page.locator('text=connexion')).toBeVisible();
+    await expect(page.locator('text=Connexion')).toBeVisible();
   });
 });

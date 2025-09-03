@@ -16,7 +16,7 @@ import ConversationDropDown from '../../components/ConversationDropDown.tsx';
 <body>
     <div class="container">
         <header class="header">
-            <div class="age-user">'ageUser'</div>
+            <div class="age-user" id="dynamicAge"></div>
             Explore tes anciennes conversations !
         </header>
 
@@ -39,7 +39,7 @@ import ConversationDropDown from '../../components/ConversationDropDown.tsx';
         <div class="conversations-section">
             <div class="conversations-header">
     <h2 class="conversations-title">Tes conversations</h2>
-    <div class="header-controls">
+    <!-- <div class="header-controls">
        <button 
     class="add-conversation-btn"
     id="addConversationBtn"
@@ -48,7 +48,7 @@ import ConversationDropDown from '../../components/ConversationDropDown.tsx';
     ➕ Nouvelle
 </button>
         <ConversationDropDown client:only="react" />
-    </div>
+    </div> -->
 </div>
             <!-- Les conv sont la -->
         </div>
@@ -56,6 +56,9 @@ import ConversationDropDown from '../../components/ConversationDropDown.tsx';
         <Footer />
     </div>
 
-    <script src="/scripts/conversation-page.js" is:inline></script>
+    <script src="/scripts/conversation-page.js" is:inline>
+
+
+    </script>
 </body>
 </html>

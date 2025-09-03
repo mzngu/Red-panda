@@ -1,3 +1,52 @@
+function getDisplayName(user) {
+  // Si l'utilisateur a un prénom et un nom
+  if (user.prenom && user.nom) {
+      return `${user.prenom} ${user.nom}`;
+  }
+  // Si l'utilisateur a seulement un prénom
+  else if (user.prenom) {
+      return user.prenom;
+  }
+  // Si l'utilisateur a seulement un nom
+  else if (user.nom) {
+      return user.nom;
+  }
+  // Sinon, utiliser le début de l'email
+  else {
+      return user.email.split('@')[0];
+  }
+}
+
+// Variable globale pour stocker les données utilisateur
+let currentUser = null;
+
+// Vérification d'authentification
+async function checkAuth() {
+    try {
+        const response = await fetch('http://localhost:8080/auth/check', {
+            credentials: 'include'
+        });
+        
+        const data = await response.json();
+        
+        if (!data.authenticated) {
+            // Pas connecté, rediriger vers la connexion
+            window.location.href = '/connexion/connexion';
+            return null;
+        }
+        
+        // Stocker les données utilisateur globalement
+        currentUser = data.user;
+        return data.user;
+        
+    } catch (error) {
+        console.error('Erreur vérification auth:', error);
+        // En cas d'erreur, rediriger vers la connexion
+        window.location.href = '/connexion/connexion';
+        return null;
+    }
+}
+
 // Fonction pour recup l'heure
 function getGreeting() {
     const now = new Date();
@@ -10,18 +59,87 @@ function getGreeting() {
     }
 }
 
-// Fonction pour mettre à jour la salutation
-function updateGreeting() {
-    const greetingElement = document.getElementById('dynamicGreeting');
-    const greeting = getGreeting();
-    const username = "'username'"; // A REMPLACER
+// Fonction pour calculer l'âge à partir de la date de naissance
+function calculateAge(birthdate) {
+    const today = new Date();
+    const birth = new Date(birthdate);
     
-    greetingElement.textContent = `${greeting} ${username}`;
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    // Si on n'a pas encore eu l'anniversaire cette année
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+        age--;
+    }
+    
+    return age;
 }
 
-// Mettre à jour la salutation au chargement de la page
-document.addEventListener('DOMContentLoaded', updateGreeting);
+// Fonction pour mettre à jour la salutation
+async function updateGreeting() {
+    const greetingElement = document.getElementById('dynamicGreeting');
+    const greeting = getGreeting();
+    
+    if (!greetingElement) return;
+    
+    // Si on n'a pas encore les données utilisateur, les récupérer
+    if (!currentUser) {
+        const user = await checkAuth();
+        if (!user) return; // Redirection effectuée dans checkAuth
+    }
+    
+    // Maintenant on peut utiliser currentUser
+    if (currentUser) {
+        const username = getDisplayName(currentUser);
+        console.log(username);
+        greetingElement.textContent = `${greeting} ${username}`;
+    } else {
+        // Fallback si pas de données utilisateur
+        greetingElement.textContent = greeting;
+    }
+}
 
+async function updateAge() {
+    const ageElement = document.getElementById('dynamicAge');
+    if (!ageElement) return;
+
+    // Récupération user si nécessaire
+    if (!currentUser) {
+        currentUser = await checkAuth();
+        if (!currentUser) return;
+    }
+
+    let birthdate = currentUser.date_naissance;
+
+    if (Array.isArray(birthdate)) {
+        birthdate = birthdate[0];
+    }
+
+    // Pas de date → ne rien afficher
+    if (!birthdate || birthdate.trim() === "") {
+        ageElement.textContent = "";
+        return;
+    }
+
+    // Vérifier que la date est valide
+    const parsedDate = new Date(birthdate);
+    if (isNaN(parsedDate.getTime())) {
+        ageElement.textContent = "";
+        return;
+    }
+
+    // Calculer l’âge
+    const age = calculateAge(parsedDate);
+    ageElement.textContent = age > 0 ? `${age} ans` : "";
+}
+
+
+// Mettre à jour la salutation et l'âge au chargement de la page
+document.addEventListener('DOMContentLoaded', async function() {
+    // Mettre à jour les informations utilisateur
+    await updateGreeting();
+    await updateAge();
+});
 // Mettre à jour la salutation toutes les minutes
 setInterval(updateGreeting, 60000);
 

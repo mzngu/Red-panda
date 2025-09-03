@@ -14,6 +14,8 @@ class Utilisateur(Base):
     mot_de_passe = Column(String, nullable=False)
     numero_telephone = Column(String, nullable=True)
     role = Column(String, nullable=False, default='utilisateur')
+    avatar = Column(String, nullable=True, default="normal") 
+    sexe = Column(String, nullable=True, default="") 
 
     __table_args__ = (
         CheckConstraint("role IN ('admin', 'utilisateur')", name='check_role'),
